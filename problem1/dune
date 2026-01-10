@@ -1,0 +1,4 @@
+(executable
+ (name main)
+ (modules main hdl test_bench)
+ (libraries hardcaml))
