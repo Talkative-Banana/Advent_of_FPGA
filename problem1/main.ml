@@ -25,5 +25,5 @@ let rec read_all acc_times acc_direc =
 
 let () =
   let (direc, times) = read_all [] [] in
-  let (count, state) = Test_bench.password times direc 50 in
+  let (count, state) = Aofpga.Test_bench.password times direc 50 in
   printf "count = %d state = %d\n" (count - 1) state

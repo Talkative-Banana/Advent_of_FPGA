@@ -1,4 +1,14 @@
+(library
+ (name Aofpga)
+ (modules hdl test_bench)
+ (libraries hardcaml))
+
 (executable
  (name main)
- (modules main hdl test_bench)
- (libraries hardcaml))
+ (modules main)
+ (libraries Aofpga hardcaml))
+
+(executable
+ (name tangent)
+ (modules tangent)
+ (libraries Aofpga hardcaml))
