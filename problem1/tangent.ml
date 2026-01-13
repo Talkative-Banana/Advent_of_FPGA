@@ -14,6 +14,10 @@ Part 2:
   Non primary workers will compute and store their results for all staring states [0 ... 100] parallely
 Part 3:
   Once primary worker is done with its work, it can use the results of other workers to finish the job.
+
+To simplify:
+  Let the primary worker also compute all of the values
+  Decrease the size of lane_width?
 *)
 
 open Printf
@@ -50,8 +54,26 @@ let () =
     String.split_on_char '\n' contents
     |> List.filter (fun s -> String.trim s <> "") in
   let (direc, times) = read_all_lines lines [] [] in
-  let states = List.init 100 (fun i ->  i) in
-  let results = Aofpga.Test_bench.password_parallel times direc states in
+  let lanes = 100 in
+  let lane_width = 16 in
+  let workers = 1 in
+  let intitial_state = 50 in
+  let states = List.init (lanes * workers) (fun i ->  (i mod lanes)) in
+  let n = List.length times in
+  let normalized_times = List.append (List.init (workers - (n mod workers)) (fun _ -> 0)) (times) in
+  let normalized_direc = List.append (List.init (workers - (n mod workers)) (fun _ -> 0)) (direc) in
+  let results = Aofpga.Test_bench.password_parallel normalized_times normalized_direc states lanes lane_width workers in
+  let rec read_entry arr state count = 
+    if state >= (workers * lanes) then 
+      (state, count)
+    else 
+    let (new_state, new_count) = (List.nth arr state) in
+        read_entry arr (new_state + lanes) (count + new_count)
+  in
   List.iteri (fun i (state, count) ->
-    printf "lane %d: count=%d state=%d\n" i (count - 1) state
-  ) results
+  if (i mod lanes == 0) then printf "-------------------------------------------\n";
+  printf "worker %d: lane %d: count = %d state = %d\n" (i / lanes) (i mod lanes) (count - 1) state;
+  ) results;
+  printf "-------------------------------------------\n";
+  let (state, count) = read_entry results intitial_state 0 in
+  printf "Final Result: count = %d state = %d\n" (count - 1) (state mod lanes) 
