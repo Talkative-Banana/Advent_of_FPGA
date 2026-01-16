@@ -56,24 +56,25 @@ let () =
   let (direc, times) = read_all_lines lines [] [] in
   let lanes = 100 in
   let lane_width = 16 in
-  let workers = 1 in
+  let workers = 3 in
   let intitial_state = 50 in
   let states = List.init (lanes * workers) (fun i ->  (i mod lanes)) in
   let n = List.length times in
   let normalized_times = List.append (List.init (workers - (n mod workers)) (fun _ -> 0)) (times) in
   let normalized_direc = List.append (List.init (workers - (n mod workers)) (fun _ -> 0)) (direc) in
   let results = Aofpga.Test_bench.password_parallel normalized_times normalized_direc states lanes lane_width workers in
-  let rec read_entry arr state count = 
-    if state >= (workers * lanes) then 
+  let rec read_entry arr worker state count = 
+    if worker >= workers then 
       (state, count)
     else 
-    let (new_state, new_count) = (List.nth arr state) in
-        read_entry arr (new_state + lanes) (count + new_count)
+    let idx = worker * lanes + state in
+    let (new_lane, new_count) = List.nth arr idx in
+    read_entry arr (worker + 1) new_lane (count + new_count)
   in
   List.iteri (fun i (state, count) ->
   if (i mod lanes == 0) then printf "-------------------------------------------\n";
   printf "worker %d: lane %d: count = %d state = %d\n" (i / lanes) (i mod lanes) (count - 1) state;
   ) results;
   printf "-------------------------------------------\n";
-  let (state, count) = read_entry results intitial_state 0 in
-  printf "Final Result: count = %d state = %d\n" (count - 1) (state mod lanes) 
+  let (state, count) = read_entry results 0 intitial_state 0 in
+  printf "Final Result: count = %d state = %d\n" (count - workers) (state mod lanes) 
